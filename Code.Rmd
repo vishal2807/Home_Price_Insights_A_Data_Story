@@ -1,0 +1,372 @@
+---
+title: "Home Price Insights: A Data Story"
+author: "Vishal Bachal"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,include = TRUE,warning = FALSE,message = FALSE,out.width = "50%", out.height="50%",comment=NA)
+```
+## INTRODUCTION
+
+In this report, we'll be looking at how different factors affect house prices in Baton Rouge, Louisiana, USA. By analyzing data, we hope to understand the relationships between these factors and housing prices. This study aims to provide insights into the local housing market dynamics.
+
+```{r}
+# First need to download and load the necessary libraries
+
+library(dplyr)
+library(ggplot2)
+#install.packages("corrplot")
+library(corrplot)
+#install.packages("caret")
+library(caret)
+library(tidyverse)
+
+setwd("D:/git/Home_Price_Insights_A_Data_Story")
+
+# Import the dataset
+My_data <- read.csv("D:/git/Home_Price_Insights_A_Data_Story/dataset.csv")
+
+```
+
+## Data exploration
+```{r,results = 'hide'}
+# Summary of variables
+str(My_data)
+
+#This shows how many columns there are in the dataset.
+num_col <- ncol(My_data)
+print(paste("Number of Columns:", num_col))
+
+#This shows how many rows there are in the dataset.
+num_row <- nrow(My_data)
+print(paste("Number of Rows:", num_row))
+
+# Variable types
+types <- sapply(My_data, class)
+table(types)
+```
+
+In the data exploration process, I calculated descriptive statistics, such as standard deviation (SD), and compiled a summary of the variables. Furthermore, by using data visualization tools like scatter plots and histograms plots to understand data distributions and relationships. In addition, I looked into correlations between variables to find trends and dependencies. 
+```{r}
+# Descriptive Statistics
+Descriptive_stat <- summary(My_data)
+print(Descriptive_stat)
+
+```
+
+The dataset provides an overview of various aspects of houses in Baton Rouge, Louisiana. The prices range from $22,000 to $1,580,000, with an average of around $156,519. The house sizes vary from 662 square feet to 7,897 square feet, averaging approximately 2,373 square feet. The number of bedrooms ranges from 1 to 8, with an average of roughly 3.2 bedrooms per house, and the bathrooms range from 1 to 5, averaging about 2 bathrooms per house. The ages of the houses range from 1 to 80 years, with an average age of around 18 years.Additionally, around 8.5% of the houses have pools, while approximately 56.9% feature fireplaces. Only about 7.1% of the houses are waterfront properties. The average "Days on Market" (DOM) is approximately 73.8 days, ranging from 0 to 673 days. These statistics provide insights into the housing market dynamics in Baton Rouge, Louisiana, highlighting the diverse range of prices, sizes, amenities, and market durations of the available houses.
+
+
+```{r,results='hide'}
+SD = apply(My_data, 2, sd, na.rm = TRUE)
+SD
+
+```
+
+
+```{r, fig.width=3, fig.height=2}
+
+par(mfrow = c(1, 4))
+# Visualize distributions of variables using different plots
+# Histogram of Price
+Hist_price <- ggplot(My_data, aes(x = price)) +
+  geom_histogram( fill = "orange", color = "black") +
+  labs(title = "Histogram of Price", x = "Price", y = "Frequency")
+print(Hist_price)
+
+
+#Histogram of sqft
+Hist_sqft <- ggplot(My_data, aes(x = sqft)) +
+  geom_histogram(binwidth = 1000, fill = "purple", color = "black") +
+  labs(title = "Histogram of Sqft",
+       x = "Sqft",
+       y = "Frequency")
+print(Hist_sqft)
+
+
+```
+
+The first histogram shows how home prices are distributed.The distribution of prices in the dataset is shown by the histogram. The pattern is right-skewed, with most prices concentrated at the lower end, perhaps below 100,000 or 200,000. The frequency rapidly declines as prices rise; between 500,000 and 1,000,000, only few occurrences are noted. There are relatively few, if any, prices over 1,000,000, suggesting a lack of data points at the highest price points.
+ Understanding the spread and distribution of home prices in the dataset is made easier with the help of this figure.
+
+The "Histogram of Sqft" histogram shows how the sqft of the houses in the dataset is distributed visually. With most properties concentrated in lower Sqft ranges, perhaps between 1,000 and 3,000 Sqft, it displays a right-skewed distribution. Larger square footage areas are less common as Sqft values rise, as indicated by a reduction in property frequency.Visibility is improved by the purple bars set against a black outline. Knowing the variation and makeup of sqft is made easier with the help of this figure.
+
+
+
+```{r,echo=FALSE, fig.width=3, fig.height=2}
+par(mfrow = c(2, 2))
+# Scatter plot of Price vs. Sqft
+scatter_plt <- ggplot(My_data, aes(x = sqft, y = price)) +
+  geom_point(fill = "green", color = "red") + 
+  geom_smooth(method = "loess", se = FALSE, color = "skyblue") +theme_light() +
+  labs(title = "Price vs. Sqft", x = "Sqft", y = "Price")
+print(scatter_plt)
+
+# Boxplot of Price by Style
+box_plot <- ggplot(My_data, aes(x = style, y = price,group=style)) +
+  geom_boxplot(color = "black", alpha = 0.7) +theme_light() +
+  labs(title = "Boxplot of Price by Style", x = "Style", y = "Price") +
+  theme(plot.title = element_text(hjust=0.5))
+print(box_plot)
+
+```
+
+The first plot displays the "Price vs.Sqft" scatter chart. This chart demonstrates the connection between house prices and sqft. Each data point represents the price fluctuations at different square footages. A smoothed line provides insight into overall trends.This chart helps to understand the price patterns in the real estate market, supporting buyers, sellers, and industry professionals in their decision-making process.
+
+The second plot visualizes house prices across architectural styles using boxplots. Each boxplot represents a style's price distribution, with median prices depicted by central lines. The width of the boxes illustrates price variability within each style. This visualization enables a quick comparison of price distributions among architectural styles.
+Additionally, the varying colors distinguish between different architectural styles, aiding in easy identification.
+
+
+```{r,results = 'hide'}
+# Correlations
+correlations_data <- cor(My_data[, sapply(My_data, is.numeric)])
+
+#Print Correlations
+print(correlations_data)
+
+```
+
+
+```{r,echo=FALSE, fig.width=4, fig.height=3}
+
+#Visualize the Correlations data using a color-coded plot 
+corrplot(correlations_data, method = "color")
+```
+
+The correlation coefficient between two variables is indicated by the number inside each square in this diagram, which stands for a pair of variables. There are two possible correlation coefficients: -1 and 1. A perfect positive correlation is represented by a value of 1, a perfect negative correlation by a value of -1, and 0 means there's no correlation between the variables.
+
+
+
+
+## Probability, distributions and confidence intervals
+
+```{r}
+# Probability of having a pool
+pool_prob <- sum(My_data$pool == "1") / nrow(My_data)
+#print the probability of having pool
+print(paste("Probability of having a pool:", pool_prob))
+```
+
+A The probability of randomly selecting a house from the dataset and finding that it has a pool is calculated to be approximately 8.46%.Only 8.46% of the houses in the dataset have a pool, according to this probability estimate, which suggests that the likelihood of any particular property having one is very low. This observation suggests that pools might not be a feature shared by all of the houses , which would make them a desired or less common amenity.
+
+```{r}
+#conditional probability that it has a fireplace, given that it has a pool.
+#subset of pool
+pool_subset <- subset(My_data, pool == "1")
+#Calculating the probability that it has a fireplace. When a property has a pool
+prob_fireplace_has_pool <- sum(pool_subset$fireplace == "1") / nrow(pool_subset)
+print(paste("Conditional probability of having a fireplace given that it has a pool:",prob_fireplace_has_pool))
+```
+
+When looking specifically at houses that have a pool, the conditional probability of also finding a fireplace among these houses is relatively high,at approximately 72.6%. There is a significant correlation between the number of fireplaces and pools in the sample, as indicated by the conditional probability value of 72.6%. It suggests that if a house has a pool, there is a high likelihood, around 72.6%, that it will also have a fireplace. There could be a correlation between the availability of fireplaces and pools due to specific housing patterns or preferences.
+
+
+```{r}
+# Calculating the probability that at least 3 out of 10 houses selected will have a pool.
+# Using Binomial distribution
+probability_at_least_3 <- sum(dbinom(3:10, size = 10, prob = pool_prob))
+print(paste("Probability that at least 3 out of 10 houses selected at random have a pool:",probability_at_least_3))
+
+
+```
+
+When randomly selecting 10 houses from the dataset, the probability of observing at least 3 of these houses having a pool is found to be approximately 4.62%.The distribution of homes with pools within a small subset of 10 homes is revealed by this probability value. Based on a random selection of ten residences, there is a small probability (4.62%) of discovering at least three houses with pools. This probability calculation helps in understanding the likelihood of encountering houses with pools in a small random sample.
+
+
+```{r}
+# Determine the 95% confidence interval for the mean house price in the USA, assuming that the data set contains a random sample of homes in the USA.
+
+confidence_interval_house <- t.test(My_data$price)$conf.int
+print(paste("95% Confidence Interval for the mean house price:", confidence_interval_house))
+
+```
+The estimated 95% confidence interval for the mean house price in the USA is $148,726.08–$164,311.04, which represents the range within which we may express a 95% confidence that the true average house price is located.This interval serves as a gauge of the precision and accuracy of our estimation based on the dataset. The range from $148,726.08 to $164,311.04 represents the likely values for this measure, which helps with analysis and decision-making by capturing the uncertainty involved in predicting the average house price.
+
+
+##  Contingency tables and hypothesis tests 
+```{r,results = 'hide'}
+#Test the hypothesis that the mean house price (over all house styles) is greater if a house is on the waterfront
+#Get waterfront property prices.
+waterfront_prices <- My_data$price[My_data$waterfront == 1]
+#Get non_waterfront property prices
+non_waterfront_prices <- My_data$price[My_data$waterfront == 0]
+#Performing two-sample t-test with confidence level is 0.95
+t_test <- t.test(waterfront_prices,non_waterfront_prices, data = My_data, alternative = "greater", conf.level = 0.95)
+```
+
+```{r}
+#Ploting boxplot for waterfront vs non-waterfront prices
+ggplot(My_data, aes(x=factor(waterfront), y=price, fill=factor(waterfront))) +
+  geom_boxplot() +
+  labs(x="Waterfront", y="Price", fill="Waterfront") +
+  ggtitle("Boxplot of House Prices by Waterfront") +
+  theme_bw()
+
+```
+
+The boxplot displays the distribution of home values according to whether or not the property has a view of the waterfront. The median price for non-waterfront houses (0) is around $200,000, while the average price of waterfront homes (1) is around $300,000, which is much more. The waterfront houses also exhibit a wider range of prices, with some outliers reaching over $1,500,000.This shows that, perhaps as a result of the premium attached to such attractive houses, having a waterfront view has a significant impact on house prices in the sample. The broader distribution and higher median for waterfront properties suggest that purchasers are prepared to pay a significant premium for the extra amenity and appeal of being close to the the water.
+
+
+
+```{r}
+#printing p-value
+print(paste("p-value is", t_test$p.value))
+#print the output
+print(t_test)
+#checking if the if the p value is less than 0.05 If it is less than that, then reject the null hypothesis; otherwise, accept the null hypothesis.
+if (t_test$p.value < 0.05) {
+  print("We reject the null hypothesis. The mean house price is significantly greater for waterfront houses.")
+} else {
+  print("We do not reject the null hypothesis. The mean house price is not significantly different between waterfront and non-waterfront houses.")
+}
+
+```
+
+In the analysis conducted on the dataset, several key tasks were undertaken to explore relationships and test hypotheses regarding house features. The first task involved testing the hypothesis that the mean house price differs between waterfront and non-waterfront houses. This analysis was carried out using a Two-Sample Welch's t-test, which compared the mean house prices for the two categories. The null hypothesis stated that the mean house price was equal for waterfront and non-waterfront houses, while the alternative hypothesis proposed that the mean house price for waterfront properties was greater. The resulting p-value from the test was calculated to be 0.00015, which falls below the 5% significance level. This indicates that there is strong evidence to reject the null hypothesis, suggesting that the mean house price for waterfront houses is significantly greater than that of non-waterfront houses.
+
+
+The analysis progressed to construct a contingency table, aiming to explore the correlation between the existence of pools and fireplaces in houses. This table presented the proportional frequencies of houses with and without pools, categorized by the presence or absence of fireplaces. By delineating the distribution of houses across different groupings, the contingency table provided valuable insights into the potential relationship between fireplaces and pools within the dataset,offering valuable insights into their co-occurrence.
+
+```{r}
+#  Create a contingency table showing relative frequencies for "Pool" and "No pool" according to whether a house has or hasn’t got a fireplace
+# Create contingency table
+Contingency_table <- table(My_data$fireplace, My_data$pool)
+# Convert to relative frequencies
+Contingency_table_Relative <- prop.table(Contingency_table, margin = 1)
+#output
+print(Contingency_table_Relative)
+```
+
+Subsequently, a chi-squared test for independence was conducted to assess whether the presence of a fireplace in a house was independent of the presence of a pool. The null hypothesis posited that there was no association between fireplaces and pools, while the alternative hypothesis suggested a dependence.
+
+```{r}
+# test whether a house having a fireplace is independent of whether it has a pool.
+# Perform chi-squared test for independence with a 5% significance level
+chisquared_result <- chisq.test(Contingency_table)
+
+#Result
+print(chisquared_result)
+```
+
+ The test results revealed a chi-squared value of 7.3389 with 1 degree of freedom and a p-value of 0.006748. As the obtained p-value was less than the 5% significance level, the null hypothesis was rejected. This implies that the presence of a fireplace in a house is dependent on whether the house has a pool based on the dataset analysis.
+ 
+ 
+## Simple Linear Regression
+
+A simple linear regression was conducted to examine the relationship between the logarithm of house prices and the logarithm of square footage. The regression model aims to predict house prices based on sqft.
+```{r}
+# Performing simple linear regression
+# linear regression with ln(price) as the response variable and ln(sqft) as the predictor variable
+
+My_data$log_price <- log(My_data$price)
+My_data$log_sqft <- log(My_data$sqft)
+
+simple_li_model <- lm(log(price) ~ log(sqft), data = My_data)
+summary(simple_li_model)
+
+```
+The coefficient of 0.97758 for ln(sqft) indicates that the natural logarithm of house price is predicted to grow by roughly 0.97758 units for every unit increase in the natural logarithm of sqft. When the natural logarithm of sqft is zero, the intercept of 4.30022 represents the expected natural logarithm of house price; however, as the natural logarithm of zero is undefinable, this may not have a significant real-world impact. Supported by substantial t-statistic values and low p-values (< 0.05), the intercept and slope coefficients exhibit statistical significance.Thus, indicating that total area (square footage) serves as a significant predictor of house price. Regarding model fit, the adjusted R-squared value of 0.6098 suggests that approximately 60.98% of the variation in the natural logarithm of house price can be accounted for by the natural logarithm of square footage in the regression model. Additionally, the F-statistic of 1348 with a very low p-value confirms the overall significance of the model. 
+ 
+```{r,results='hide'}
+# Identify significance of predictor
+significance <- ifelse(summary(simple_li_model)$coefficients["log(sqft)", "Pr(>|t|)"] < 0.05, "significant", "not significant")
+print(paste("Total area is a", significance, "predictor of house price."))
+
+```
+ 
+```{r,fig.width=3, fig.height=2}
+
+par(mfrow = c(2, 2))
+# Plotting data and fitted model
+ggplot(My_data, aes(x = log(sqft), y = log(price))) +
+  geom_point() +theme_light() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Fitted Model: ln(price) vs. ln(sqft)", x = "ln(sqft)", y = "ln(price)")
+
+
+# Plotting residuals
+residuals <- residuals(simple_li_model)
+ggplot(My_data, aes(x = log(sqft), y = residuals)) +
+  geom_point() +theme_light() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals Plot", x = "ln(sqft)", y = "Residuals")
+
+# Comments on the plots:
+# The first plot, which uses the fitted linear regression line, displays the relationship between ln (price) and ln (sqft).
+# The second visualization shows the residuals,  representing the variances between the observed and fitted values. 
+# A reference line for zero residuals is provided in order to evaluate the model's homoscedasticity assumption.
+# The assumption is probably satisfied if the residuals are dispersed randomly, with no discernible pattern, around zero.
+```
+ 
+The first scatter plot clearly shows that the natural logarithm of sqft and the natural logarithm of house price have a linear relationship. The direction and strength of this association are indicated by the fitted linear regression model, which is represented by the red line. This validates the interpretation of the slope coefficient by indicating a positive correlation between sqft and home price.
+
+The second scatter plot shows the differences between the values observed and the values the model predicted are shown in the residuals figure. A reference line for zero residuals aids in assessing the  heterogeneity of variance of the model. A random scattering of residuals around zero with no apparent pattern signifies that the model's assumptions are met.
+
+```{r,fig.width=3, fig.height=2}
+par(mar = c(2, 2, 2, 2))  
+
+#Fiting a linear regression model
+lin_mod <- lm(log_price ~ log_sqft, data = My_data)
+
+
+residuals1 <- resid(lin_mod)
+
+
+#Check for normality of errors using Q-Q plot
+qqnorm(residuals1, main = "Normal Q-Q Plot of Residuals")
+qqline(residuals1, col = "red")
+
+```
+
+Additionally, the Q-Q plot provides a visual comparison between the residuals' distribution from our regression model and the expected distribution of a normal distribution. A near-linear relationship between the points and the residuals indicates that the distribution of the residuals is approximately normal. This is significant because proper findings from many statistical techniques, such as linear regression, depend on this assumption being true.
+
+Overall,supported by strong statistical tests and visuals showing the relationship between the variables, the simple linear regression analysis indicates that sqft strongly predicts house price.
+
+## Multiple Linear Regression
+
+In the multiple linear regression analysis, we initially developed a comprehensive model using all available predictor variables to predict house prices. We then improved this model by using stepwise regression to get a more condensed version that concentrated on important predictors.Through k-fold cross-validation, we compared the full model's performance against the reduced model.
+```{r,results='hide'}
+data <-My_data %>%
+  mutate_if(is.character, as.factor)
+
+# Creating formula for full model
+full_model <- log(price) ~ log(sqft) + bedrooms + baths + age + pool + style + fireplace + waterfront + dom
+summary(full_model)
+
+```
+
+```{r}
+# Performing stepwise regression for feature selection
+reduced_model <- train(
+  full_model,
+  data = data,
+  method = "lm",
+  trControl = trainControl(method = "cv", number = 10, verboseIter = FALSE),
+  tuneLength = 1
+)
+reduced_model
+```
+The analysis conducted a linear regression on housing data with predictors such as square footage, bedrooms, baths, age, pool, style, fireplace, waterfront,and days on market.The following important performance metrics were obtained using 10-fold cross-validation:RMSE (0.256),Rsquared (0.734),and MAE(0.191).These values suggest the model accurately predicts house prices, explaining approximately 73.40% of the variance.The cross-validation approach enhances reliability by testing the model across diverse data subsets.
+
+
+Our results showed the ability of the entire model to explain variation in house prices, with an RMSE of 0.5055. On the other hand, the reduced model had a slightly higher RMSE of 0.5418, suggesting a trade-off between model complexity and accuracy.  The reduced model, while simpler, may sacrifice some precision in exchange for a clearer and more interpretable model.
+
+```{r}
+# Comparing the performances of the whole and reduced models using k-fold cross-validation
+
+control <- trainControl(method = "cv", number = 10)
+full_model_cv <- train(full_model, data = data, method = "lm", trControl = control)
+
+# Compare model performances using RMSE(Root Mean Square Error)
+print(paste("Full Model RMSE:",sqrt(full_model_cv$results$RMSE)))
+
+reduced_model_cv <- train(log(price) ~ log(sqft) + bedrooms + style + fireplace + waterfront + dom, data = data, method = "lm", trControl = control)
+# Compare model performances using RMSE(Root Mean Square Error)
+print(paste("Reduced Model RMSE:",sqrt(reduced_model_cv$results$RMSE)))
+
+```
+
+## Conclusion
+
+The conclusion of this report is that the housing dataset provides insightful information about the variables affecting home prices. Houses with pools have a much higher possibility of having fireplaces (around 0.726). The probability of choosing 3 randomly from 10 houses with a pool is low, around 0.046.The mean house price's confidence intervals indicate a wide range of possible values, ranging from $148,726 to infinity to $164,311 to infinity. The contingency table's variables are associated with one another, and statistical tests show significant differences in house prices between waterfront and non-waterfront properties. A significant correlation between square footage and house price is evident from the linear regression study, which accounts for around 61% of the variability.Furthermore, cross-validated sampling suggests that prediction accuracy is increased by adding more predictors. These results provide real estate stakeholders with insightful information that successfully directs decision-making processes.
